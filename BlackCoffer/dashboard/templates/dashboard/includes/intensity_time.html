@@ -1,0 +1,47 @@
+<h2>Intensity Over Time</h2>
+    
+    <!-- Graph Container -->
+    <div id="intensity_graph"></div>
+    {{ intensity_time_graph|safe }}
+    
+    <p>{{ hello }}</p>
+    <!-- <script>
+        function loadGraph() {
+            fetch("/intensity_time/")  // Calling Django View
+            .then(response => response.json())
+            .then(data => {
+                if (data !== "null") {
+                    var graph = JSON.parse(data);
+                    Plotly.newPlot("intensity_graph", graph);
+                } else {
+                    document.getElementById("intensity_graph").innerHTML = "<p>No data available</p>";
+                }
+            })
+            .catch(error => console.error("Error loading graph:", error));
+        }
+
+        // Load the graph when the page loads
+        window.onload = loadGraph;
+    </script> -->
+    <!-- <script>
+        function loadGraph() {
+            fetch("/intensity_time")
+            .then(response => response.json())
+            .then(data => {
+                console.log("✅ Received Data:", data);  // Log full JSON response
+                
+                if (data.graphJSON) {
+                    console.log("✅ Parsed Graph Data:", JSON.parse(data.graphJSON));  // Log parsed data
+                    Plotly.newPlot("intensity_graph", JSON.parse(data.graphJSON));
+                } else {
+                    console.warn("⚠️ No data available");
+                    document.getElementById("intensity_graph").innerHTML = "<p>No data available</p>";
+                }
+            })
+            .catch(error => console.error("❌ Error loading graph:", error));
+        }
+    
+        // Load the graph when the page loads
+        window.onload = loadGraph;
+    </script> -->
+    
