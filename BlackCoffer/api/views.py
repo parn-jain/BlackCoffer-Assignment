@@ -22,11 +22,23 @@ class DataListView(generics.ListAPIView):
 
 
 @api_view(['GET'])
+def get_unique_sectors(request):
+    unique_sectors = Data.objects.values_list('sector', flat=True).distinct()
+    return JsonResponse({"sectors": list(unique_sectors)})
+
+@api_view(['GET'])
+def get_unique_countries(request):
+    unique_countries = Data.objects.values_list('country', flat=True).distinct()
+    return JsonResponse({"countries": list(unique_countries)})
+
+@api_view(['GET'])
 def intensity_time_api(request):
     from_year = request.GET.get("from_year")
     to_year = request.GET.get("to_year")
-    sector = request.GET.get("sector")
-    country = request.GET.get("country")
+    sectors = request.GET.getlist("sector") 
+    countries = request.GET.getlist("country")
+    # sector = request.GET.get("sector")
+    # country = request.GET.get("country")
     
     queryset = Data.objects.all()
     if from_year and to_year:
@@ -36,10 +48,10 @@ def intensity_time_api(request):
     elif to_year:
         queryset = queryset.filter(start_year__lt=to_year)
 
-    if sector:
-        queryset = queryset.filter(sector=sector)
-    if country:
-        queryset = queryset.filter(country=country)
+    if sectors:
+        queryset = queryset.filter(sector__in=sectors)
+    if countries:
+        queryset = queryset.filter(country__in=countries)
     
     queryset = queryset.values('start_year','sector','country').annotate(avg_intensity=Avg("intensity"))
     df = pd.DataFrame(queryset)
@@ -156,8 +168,10 @@ def sunburst_chart(request):
     # Get filter parameters from request
     from_year = request.GET.get('from_year')
     to_year = request.GET.get('to_year')
-    country = request.GET.get('country')
-    sector = request.GET.get('sector')
+    sectors = request.GET.getlist("sector") 
+    countries = request.GET.getlist("country")
+    # country = request.GET.get('country')
+    # sector = request.GET.get('sector')
 
     # Filter queryset based on provided filters
     queryset = Data.objects.all()
@@ -169,10 +183,10 @@ def sunburst_chart(request):
     elif to_year:
         queryset = queryset.filter(start_year__lt=to_year)
 
-    if sector:
-        queryset = queryset.filter(sector=sector)
-    if country:
-        queryset = queryset.filter(country=country)
+    if sectors:
+        queryset = queryset.filter(sector__in=sectors)
+    if countries:
+        queryset = queryset.filter(country__in=countries)
 
     # Fetch necessary fields and compute average intensity
     queryset = queryset.values('start_year', 'sector', 'topic', 'country').annotate(avg_intensity=Avg("intensity"))

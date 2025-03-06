@@ -78,16 +78,96 @@
             </div>
             <div class="col">
                 <label>Sector:</label>
-                <input type="text" class="form-control" name="sector" value="{{ request.GET.sector }}">
+                <select class="form-control" name="sector" id="sectorSelect" multiple>
+                    <option value="">Select Sectors</option>
+                </select>
             </div>
             <div class="col">
                 <label>Country:</label>
-                <input type="text" class="form-control" name="country" value="{{ request.GET.country }}">
+                <select class="form-control" name="country" id="countrySelect" multiple>
+                    <option value="">Select Countries</option>
+                </select>
+               
             </div>
+            
+            
             <div class="col">
                 <label>&nbsp;</label>
                 <button type="submit" class="btn btn-primary btn-block">Apply</button>
             </div>
+            <div class="col">
+                <button id="clearFilters" class="btn btn-secondary mt-2">Clear Filters</button>
+            </div>
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                        fetch('/api/get_unique_sectors/')  
+                            .then(response => response.json())
+                            .then(data => {
+                                let sectorSelect = document.getElementById("sectorSelect");
+                                data.sectors.forEach(sector => {
+                                    let option = document.createElement("option");
+                                    option.value = sector;
+                                    option.textContent = sector;
+                                    sectorSelect.appendChild(option);
+                                });
+                            })
+                            .catch(error => console.error("Error fetching sectors:", error));
+                    });
+
+                    document.addEventListener("DOMContentLoaded", function() {
+                        fetch('/api/get_unique_countries/')  
+                            .then(response => response.json())
+                            .then(data => {
+                                let countrySelect = document.getElementById("countrySelect");
+                                data.countries.forEach(country => {
+                                    let option = document.createElement("option");
+                                    option.value = country;
+                                    option.textContent = country;
+                                    countrySelect.appendChild(option);
+                                });
+                            })
+                            .catch(error => console.error("Error fetching sectors:", error));
+                    });
+
+                document.querySelector("form").addEventListener("submit", function(event) {
+                    event.preventDefault();  // Prevent normal form submission
+            
+                    let params = new URLSearchParams();
+            
+                    // Get filter values
+                    let fromYear = document.querySelector("input[name='from_year']").value;
+                    let toYear = document.querySelector("input[name='to_year']").value;
+            
+                    let sectors = Array.from(document.querySelector("#sectorSelect").selectedOptions).map(option => option.value);
+                    let countries = Array.from(document.querySelector("#countrySelect").selectedOptions).map(option => option.value);
+            
+                    // Append to URL parameters
+                    if (fromYear) params.append("from_year", fromYear);
+                    if (toYear) params.append("to_year", toYear);
+                    if (sectors.length) params.append("sector", sectors.join(","));  // Pass as comma-separated string
+                    if (countries.length) params.append("country", countries.join(",")); 
+            
+                    // Reload page with new parameters
+                    window.location.search = params.toString();
+                });
+
+
+                document.addEventListener("DOMContentLoaded", function() {
+    document.getElementById("clearFilters").addEventListener("click", function() {
+        // Reset all filter inputs
+        document.getElementById("sectorSelect").value = "";
+        document.getElementById("fromYear").value = "";
+        document.getElementById("toYear").value = "";
+
+        // Remove all query parameters from URL and reload the page
+        window.history.pushState({}, document.title, window.location.pathname);
+        location.reload();
+    });
+});
+
+            </script>
+           
+            
         </div>
     </form>
 </div>
