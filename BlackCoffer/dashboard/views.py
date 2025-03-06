@@ -103,62 +103,64 @@ def intensaefsaity_time(request):
 
 
 
-def relevance_time(request):
-    from_year = request.GET.get('from_year')
-    to_year = request.GET.get('to_year')
-    country = request.GET.get('country')
-    sector = request.GET.get('sector')
+# def relevance_time(request):
+#     from_year = request.GET.get('from_year')
+#     to_year = request.GET.get('to_year')
+#     country = request.GET.get('country')
+#     sector = request.GET.get('sector')
 
-    queryset = Data.objects.all()
-    if from_year and to_year:
-        queryset = queryset.filter(start_year__range=(from_year,to_year))
-    elif from_year:
-        queryset = queryset.filter(start_year__gt=from_year)
-    elif to_year:
-        queryset = queryset.filter(start_year__lt=to_year)
+#     queryset = Data.objects.all()
+#     if from_year and to_year:
+#         queryset = queryset.filter(start_year__range=(from_year,to_year))
+#     elif from_year:
+#         queryset = queryset.filter(start_year__gt=from_year)
+#     elif to_year:
+#         queryset = queryset.filter(start_year__lt=to_year)
 
-    if sector:
-        queryset = queryset.filter(sector = sector)
-    if country:
-        queryset = queryset.filter(country = country)
+#     if sector:
+#         queryset = queryset.filter(sector = sector)
+#     if country:
+#         queryset = queryset.filter(country = country)
 
-    queryset = queryset.values('start_year','sector','country').annotate(avg_relevance = Avg("relevance"))        
-    # print(list(queryset))
-    df = pd.DataFrame(queryset)
+#     queryset = queryset.values('start_year','sector','country').annotate(avg_relevance = Avg("relevance"))        
+#     # print(list(queryset))
+#     df = pd.DataFrame(queryset)
 
-    if df.empty:
-        pass
+#     if df.empty:
+#         return JsonResponse({"graph": None})
+#     if 'sector' not in df.columns:
+#         return JsonResponse({"graph": None, "error": "No 'sector' column found in the data."})
 
-    sectors = df['sector'].unique()
-    colors = pc.qualitative.Dark24 
-    if len(sectors) > len(colors): 
-        import random
-        import matplotlib.colors as mcolors
-        colors = [mcolors.to_hex([random.random(), random.random(), random.random()]) for _ in range(len(sectors))]
-    color_map = {sector: colors[i % len(colors)] for i, sector in enumerate(sectors)}
+#     sectors = df['sector'].unique()
+#     colors = pc.qualitative.Dark24 
+#     if len(sectors) > len(colors): 
+#         import random
+#         import matplotlib.colors as mcolors
+#         colors = [mcolors.to_hex([random.random(), random.random(), random.random()]) for _ in range(len(sectors))]
+#     color_map = {sector: colors[i % len(colors)] for i, sector in enumerate(sectors)}
 
-    fig = go.Figure()
+#     fig = go.Figure()
 
-    for sector in sectors:
-        sector_data = df[df['sector']==sector]
-        fig.add_trace(go.Scatter(
-            x = sector_data['start_year'],
-            y = sector_data['avg_relevance'],
-            mode = 'lines+markers',
-            name = f"Relevance-{sector}",   
-            line = dict(color = color_map[sector])
-        ))
+#     for sector in sectors:
+#         sector_data = df[df['sector']==sector]
+#         fig.add_trace(go.Scatter(
+#             x = sector_data['start_year'],
+#             y = sector_data['avg_relevance'],
+#             mode = 'lines+markers',
+#             name = f"Relevance-{sector}",   
+#             line = dict(color = color_map[sector])
+#         ))
 
-    fig.update_layout(
-        title = "Relevance Over Time by Sector",
-        xaxis_title = "year",
-        yaxis_title = "Relevance",
-        legend_title = "Sector",
-        template = "plotly_white"
-    )
+#     fig.update_layout(
+#         title = "Relevance Over Time by Sector",
+#         xaxis_title = "year",
+#         yaxis_title = "Relevance",
+#         legend_title = "Sector",
+#         template = "plotly_white"
+#     )
 
-    relevance_time_graph = plot(fig,output_type='div')
-    return relevance_time_graph
+#     relevance_time_graph = plot(fig,output_type='div')
+#     return relevance_time_graph
 
 
 
@@ -169,45 +171,45 @@ def get_iso3(country_name):
         return pycountry.countries.lookup(country_name).alpha_3
     except:
         return None
-def Intensity_Country(request):
-    from_year = request.GET.get('from_year')
-    to_year = request.GET.get('to_year')
-    country = request.GET.get('country')
-    sector = request.GET.get('sector')
+# def Intensity_Country(request):
+#     from_year = request.GET.get('from_year')
+#     to_year = request.GET.get('to_year')
+#     country = request.GET.get('country')
+#     sector = request.GET.get('sector')
 
-    queryset = Data.objects.all()
-    if from_year and to_year:
-        queryset = queryset.filter(start_year__range=(from_year,to_year))
-    elif from_year:
-        queryset = queryset.filter(start_year__gt=from_year)
-    elif to_year:
-        queryset = queryset.filter(start_year__lt=to_year)
+#     queryset = Data.objects.all()
+#     if from_year and to_year:
+#         queryset = queryset.filter(start_year__range=(from_year,to_year))
+#     elif from_year:
+#         queryset = queryset.filter(start_year__gt=from_year)
+#     elif to_year:
+#         queryset = queryset.filter(start_year__lt=to_year)
 
-    if sector:
-        queryset = queryset.filter(sector = sector)
-    if country:
-        queryset = queryset.filter(country = country)
-    queryset = queryset.values('start_year','country', 'intensity')
-    df = pd.DataFrame(queryset)
-    # print(df)
+#     if sector:
+#         queryset = queryset.filter(sector = sector)
+#     if country:
+#         queryset = queryset.filter(country = country)
+#     queryset = queryset.values('start_year','country', 'intensity')
+#     df = pd.DataFrame(queryset)
+#     # print(df)
     
 
-    df['iso_code'] = df['country'].apply(get_iso3)
+#     df['iso_code'] = df['country'].apply(get_iso3)
 
-    df_grouped = df.groupby(['iso_code', 'country'], as_index=False)['intensity'].mean()
+#     df_grouped = df.groupby(['iso_code', 'country'], as_index=False)['intensity'].mean()
 
-    fig = px.choropleth(
-        df_grouped,
-        locations='iso_code', 
-        color='intensity',  
-        hover_name='country',  
-        color_continuous_scale="Viridis", 
-        title="Global Intensity Analysis by Country",
-        projection="natural earth"  
-    )
+#     fig = px.choropleth(
+#         df_grouped,
+#         locations='iso_code', 
+#         color='intensity',  
+#         hover_name='country',  
+#         color_continuous_scale="Viridis", 
+#         title="Global Intensity Analysis by Country",
+#         projection="natural earth"  
+#     )
 
-    Intensity_Country = plot(fig,output_type='div')
-    return Intensity_Country
+#     Intensity_Country = plot(fig,output_type='div')
+#     return Intensity_Country
 
 
 
@@ -217,12 +219,12 @@ def Intensity_Country(request):
 def index(request):
 
     # intensity_time_graph = intensity_time(request)
-    relevance_time_graph = relevance_time(request)
-    Intensity_Country_graph = Intensity_Country(request)
+    # relevance_time_graph = relevance_time(request)
+    # Intensity_Country_graph = Intensity_Country(request)
     context= {
         # "intensity_time_graph":intensity_time_graph,
-        "relevance_time_graph":relevance_time_graph,
-        "Intensity_Country_graph":Intensity_Country_graph,
+        # "relevance_time_graph":relevance_time_graph,
+        # "Intensity_Country_graph":Intensity_Country_graph,
         "abcd":'hello '
     }
     return render(request, 'dashboard/index.html',context)
