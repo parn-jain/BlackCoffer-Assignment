@@ -108,16 +108,61 @@ def get_iso3(country_name):
 
 
 
+    
 
+@api_view(['GET'])
+def heatmap_sector_relevance_api(request):
+    from_year = request.GET.get("from_year")
+    to_year = request.GET.get("to_year")
+    sectors = request.GET.getlist("sector")
+    countries = request.GET.getlist("country")
 
+    queryset = Data.objects.all()
 
+    # Apply filters
+    if from_year and to_year:
+        queryset = queryset.filter(start_year__range=(from_year, to_year))
+    elif from_year:
+        queryset = queryset.filter(start_year__gte=from_year)
+    elif to_year:
+        queryset = queryset.filter(start_year__lte=to_year)
 
+    if sectors:
+        queryset = queryset.filter(sector__in=sectors)
+    if countries:
+        queryset = queryset.filter(country__in=countries)
 
+    # Get relevant data
+    queryset = queryset.values('sector', 'relevance')
+    df = pd.DataFrame(list(queryset))
 
+    if df.empty:
+        return Response({"error": "No data available for the given filters"}, status=400)
 
+    # Process data for heatmap
+    heatmap_data = df.groupby('sector')['relevance'].value_counts().unstack().fillna(0)
 
+    # Create heatmap using Plotly
+    fig = px.imshow(
+        heatmap_data.values,
+        labels=dict(x="Relevance", y="Sector", color="Count"),
+        x=heatmap_data.columns.astype(str),
+        y=heatmap_data.index,
+        color_continuous_scale="viridis"
+    )
 
+    fig.update_layout(
+        title="Relevance Distribution Across Sectors",
+        xaxis_title="Relevance",
+        yaxis_title="Sector",
+        width=900,
+        height=500
+    )
 
+    # Convert figure to JSON
+    graph_json = json.loads(fig.to_json())
+
+    return Response({"data": graph_json})  # Ensure response structure is correct
 
 
 
@@ -125,45 +170,6 @@ def get_iso3(country_name):
 
 
 @api_view(['GET'])
-# def sunburst_chart(request):
-#     from_year = request.GET.get('from_year')
-#     to_year = request.GET.get('to_year')
-#     country = request.GET.get('country')
-#     sector = request.GET.get('sector')
-#     from_year = request.GET.get("from_year")
-#     to_year = request.GET.get("to_year")
-#     sector = request.GET.get("sector")
-#     country = request.GET.get("country")
-    
-#     queryset = Data.objects.all()
-#     if from_year and to_year:
-#         queryset = queryset.filter(start_year__range=(from_year, to_year))
-#     elif from_year:
-#         queryset = queryset.filter(start_year__gte=from_year)
-#     elif to_year:
-#         queryset = queryset.filter(start_year__lt=to_year)
-
-#     if sector:
-#         queryset = queryset.filter(sector=sector)
-#     if country:
-#         queryset = queryset.filter(country=country)
-    
-#     queryset = queryset.values('start_year','sector', 'topic', 'country').annotate(avg_intensity=Avg("intensity"))
-#     df = pd.DataFrame(queryset)
-#     df_grouped = df.groupby(["sector", "topic", "country"]).size().reset_index(name="count")
-
-#     # Create Sunburst Chart
-#     fig = px.sunburst(
-#         df_grouped,
-#         path=["sector", "topic", "country"],  # Define hierarchy: Sector → Topic → Country
-#         values="count",  # Size of slices
-#         title="Sunburst Chart: Sector → Topic → Country",
-#     )
-
-#     # Convert figure to JSON
-#     graph_json = json.loads(fig.to_json())
-
-#     return Response(graph_json)
 def sunburst_chart(request):
     # Get filter parameters from request
     from_year = request.GET.get('from_year')
@@ -250,26 +256,19 @@ def Intensity_Country_api(request):
         queryset = queryset.filter(country = country)
     queryset = queryset.values('start_year','country', 'intensity')
     df = pd.DataFrame(queryset)
-    # print(df)
+  
     
 
     df['iso_code'] = df['country'].apply(get_iso3)
-    # print("DEBUG: Unique ISO Codes:", df['iso_code'].unique())
+
     df_grouped = df.groupby(['iso_code', 'country'], as_index=False)['intensity'].mean()
-    # print("DEBUG: df_grouped columns:", df_grouped.columns)
-    # print("DEBUG: df_grouped shape:", df_grouped.shape)
-    # print("DEBUG: df_grouped dtypes:\n", df_grouped.dtypes)
-    print("DEBUG: df_grouped.empty:", df_grouped.empty)
-    print("DEBUG: df_grouped at response stage:\n", df_grouped)
+    
 
     df_filtered = df_grouped[df_grouped["intensity"] > 0]  # Example filter
-    print("DEBUG: df_filtered shape:", df_filtered.shape)
     df_grouped = df_grouped.reset_index(drop=True)
-    print("DEBUG: df_grouped after reset:\n", df_grouped)
 
 
 
-    # print("DEBUG: Grouped DataFrame:\n", df_grouped) 
     fig = px.choropleth(
         df_grouped,
         locations='iso_code',  
@@ -279,7 +278,6 @@ def Intensity_Country_api(request):
         title="Global Intensity Analysis by Country",
         projection="natural earth"  
     )
-    # print("DEBUG: Plotly Figure Data:", fig.to_dict()) 
     fig.update_layout(coloraxis_colorbar=dict(title="Intensity"))
 
     graph_json = json.loads(fig.to_json())

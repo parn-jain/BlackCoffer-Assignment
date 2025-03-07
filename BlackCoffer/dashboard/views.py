@@ -4,6 +4,8 @@ from datetime import datetime
 from dashboard.models import Data
 from django.db import connection
 from django.http import JsonResponse
+from rest_framework.response import Response
+
 from django.db.models import Avg, Sum, Count, Max, Min
 import plotly.graph_objects as go
 from plotly.offline import plot
@@ -213,7 +215,57 @@ def get_iso3(country_name):
 
 
 
+def heatmap_sector_relevance_api(request):
+    from_year = request.GET.get("from_year")
+    to_year = request.GET.get("to_year")
+    sectors = request.GET.getlist("sector")
+    countries = request.GET.getlist("country")
 
+    queryset = Data.objects.all()
+
+    # Apply filters
+    if from_year and to_year:
+        queryset = queryset.filter(start_year__range=(from_year, to_year))
+    elif from_year:
+        queryset = queryset.filter(start_year__gte=from_year)
+    elif to_year:
+        queryset = queryset.filter(start_year__lte=to_year)
+
+    if sectors:
+        queryset = queryset.filter(sector__in=sectors)
+    if countries:
+        queryset = queryset.filter(country__in=countries)
+
+    # Get relevant data
+    queryset = queryset.values('sector', 'relevance')
+    df = pd.DataFrame(list(queryset))
+
+    if df.empty:
+        return Response({"error": "No data available for the given filters"}, status=400)
+
+    # Process data for heatmap
+    heatmap_data = df.groupby('sector')['relevance'].value_counts().unstack().fillna(0)
+
+    # Create heatmap using Plotly
+    fig = px.imshow(
+        heatmap_data.values,
+        labels=dict(x="Relevance", y="Sector", color="Count"),
+        x=heatmap_data.columns.astype(str),
+        y=heatmap_data.index,
+        color_continuous_scale="viridis",
+        text_auto=True
+    )
+
+    fig.update_layout(
+        title="Relevance Distribution Across Sectors",
+        xaxis_title="Relevance",
+        yaxis_title="Sector",
+        width=900,
+        height=500
+    )
+
+    heatmap_sector_relevance = plot(fig, output_type='div')
+    return heatmap_sector_relevance
 
     
 def index(request):
@@ -221,10 +273,12 @@ def index(request):
     # intensity_time_graph = intensity_time(request)
     # relevance_time_graph = relevance_time(request)
     # Intensity_Country_graph = Intensity_Country(request)
+    heatmap_sector_relevance = heatmap_sector_relevance_api(request)
     context= {
         # "intensity_time_graph":intensity_time_graph,
         # "relevance_time_graph":relevance_time_graph,
         # "Intensity_Country_graph":Intensity_Country_graph,
+        "heatmap_sector_relevance" : heatmap_sector_relevance, 
         "abcd":'hello '
     }
     return render(request, 'dashboard/index.html',context)

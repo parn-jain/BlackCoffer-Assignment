@@ -175,6 +175,8 @@
 <div id="intensity_graph"></div>
 <div id="intensity_country_graph"></div>
 <div id="sunburst-chart"></div>
+<!-- <div id="heatmap-chart"></div> -->
+
 
 <script>
     function loadintensityGraph() {
@@ -236,6 +238,25 @@ function sunburst_chart(){
         .catch(error => console.error('Error loading Sunburst Chart:', error));
 }
 
+function heatmap_chart() {
+    const params = new URLSearchParams(window.location.search);
+    fetch(`/api/heatmap_sector_relevance_api/?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error("Error:", data.error);
+                document.getElementById("heatmap-chart").innerHTML = "<p>No data available.</p>";
+                return;
+            }
+            Plotly.react('heatmap-chart', data.data.data, data.data.layout);
+        })
+        .catch(error => console.error('Error loading Heatmap:', error));
+}
+document.addEventListener("DOMContentLoaded", heatmap_chart);
+
+// document.addEventListener("DOMContentLoaded", heatmap_chart);
+
+
 
 
         
@@ -245,6 +266,7 @@ function sunburst_chart(){
     loadintensityGraph();
     loadIntensityCountryGraph();
     sunburst_chart();
+    heatmap_chart();
 };
         </script>
 
@@ -253,6 +275,7 @@ function sunburst_chart(){
 <!-- {{intensity_time_graph|safe}} -->
 <!-- {{Intensity_Country_graph|safe}} -->
 <!-- {{relevance_time_graph|safe}} -->
+{{heatmap_sector_relevance|safe}}
  <p>{{abcd}}</p>
 
 {% endblock %}
